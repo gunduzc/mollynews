@@ -2,10 +2,12 @@
 
 ## 1. System Overview
 
-Slashnews is a web application where authenticated users can submit and browse posts.  
+SlashNews is a web application where authenticated users can submit and browse
+posts.\
 This document focuses on **Use Case 3: Submit Post** (link or text post).
 
 Submit Post covers:
+
 - collecting post input from UI,
 - authenticating session via cookie token,
 - validating business rules,
@@ -17,7 +19,8 @@ Submit Post covers:
 
 - **Primary actor:** Authenticated user
 - **Supporting systems:** Next.js runtime, libSQL client, SQLite database
-- **Boundary of this use case:** `POST /api/posts` and supporting services/components
+- **Boundary of this use case:** `POST /api/posts` and supporting
+  services/components
 
 ```mermaid
 flowchart LR
@@ -100,7 +103,8 @@ flowchart TD
 
 ### 5.2 Architectural Patterns and Styles
 
-- **Layered architecture:** Presentation -> Application -> Domain -> Infrastructure
+- **Layered architecture:** Presentation -> Application -> Domain ->
+  Infrastructure
 - **Dependency Inversion:** services depend on repository interfaces
 - **Repository pattern:** abstract persistence behind domain interfaces
 - **Factory Method + Builder:** controlled post variant creation
@@ -121,7 +125,8 @@ flowchart TD
 - **API controller:** `src/app/api/posts/route.ts`
 - **Use-case service:** `src/application/services/SubmitPostService.ts`
 - **Auth/session check:** `src/application/services/AuthService.ts`
-- **Domain creation:** `src/domain/factories/PostFactory.ts`, `src/domain/builders/PostBuilder.ts`
+- **Domain creation:** `src/domain/factories/PostFactory.ts`,
+  `src/domain/builders/PostBuilder.ts`
 - **Persistence ports:** `src/domain/interfaces/*.ts`
 - **Persistence adapters:** `src/infrastructure/repositories/*.ts`
 - **Composition root:** `src/infrastructure/container.ts`
@@ -272,15 +277,20 @@ sequenceDiagram
 ### 8.2 Context and Justification
 
 - **Repository:** isolates SQL from use-case logic.
-- **Factory Method + Builder:** separates variant selection from safe object construction.
+- **Factory Method + Builder:** separates variant selection from safe object
+  construction.
 - **DI:** allows service orchestration to depend on abstractions.
-- **Singleton:** prevents repeated DB client initialization and schema bootstrapping.
+- **Singleton:** prevents repeated DB client initialization and schema
+  bootstrapping.
 
 ## 9. Implementation Notes
 
-- Current submit endpoint supports create and list in the same route file (`POST`, `GET`).
-- Error handling is currently response-oriented (`401`, `400`) without structured logging.
-- Runtime type assertion for `PostType` is cast-based in route layer and protected by service/factory validation.
+- Current submit endpoint supports create and list in the same route file
+  (`POST`, `GET`).
+- Error handling is currently response-oriented (`401`, `400`) without
+  structured logging.
+- Runtime type assertion for `PostType` is cast-based in route layer and
+  protected by service/factory validation.
 
 ## 10. User Interface Design (if applicable)
 
@@ -299,11 +309,13 @@ sequenceDiagram
 ### 11.1 APIs
 
 - `POST /api/posts`
+
   - request: `{ title, type, url?, text? }`
   - response success: `201 { post }`
   - response error: `401/400 { error }`
 
 - `GET /api/posts`
+
   - response: `200 { posts }`
 
 ### 11.2 Third-party Systems
@@ -315,14 +327,17 @@ sequenceDiagram
 
 ### 12.1 Performance Requirements
 
-- Single submit operation should complete within normal interactive latency for local/academic deployment.
-- DB operations are simple single-row `INSERT` and indexed primary-key lookups for auth/session.
+- Single submit operation should complete within normal interactive latency for
+  local/academic deployment.
+- DB operations are simple single-row `INSERT` and indexed primary-key lookups
+  for auth/session.
 
 ### 12.2 Scalability and Optimization Strategies
 
 - Keep one DB client per process (lazy singleton).
 - Use narrow SQL queries and explicit selected columns.
-- Potential next optimization: add indexes for high-read access patterns (`created_at`, `author_id`).
+- Potential next optimization: add indexes for high-read access patterns
+  (`created_at`, `author_id`).
 
 ## 13. Error Handling and Logging
 
@@ -334,15 +349,18 @@ sequenceDiagram
 ### 13.2 Logging Mechanisms
 
 - Structured logging is not yet implemented in submit flow.
-- Recommended future enhancement: request-scoped logs with correlation id and error category.
+- Recommended future enhancement: request-scoped logs with correlation id and
+  error category.
 
 ## 14. Design for Testability
 
-- Service constructors accept abstractions (repositories/factory selector), enabling mocks/fakes.
+- Service constructors accept abstractions (repositories/factory selector),
+  enabling mocks/fakes.
 - Submit flow can be unit-tested without real DB by mocking:
   - `PostRepository`
   - `PostFactorySelector` and concrete factories
-- Route can be integration-tested for status code mapping and auth guard behavior.
+- Route can be integration-tested for status code mapping and auth guard
+  behavior.
 
 ## 15. Deployment and Installation Design
 
@@ -364,11 +382,13 @@ sequenceDiagram
 
 ## 16. Change Log
 
-- **March 5, 2026:** Initial Software Design Document created for Use Case 3 (Submit Post).
+- **March 5, 2026:** Initial Software Design Document created for Use Case 3
+  (Submit Post).
 
 ## 17. Future Work / Open Issues
 
 - Add structured logging and observability for API/service layers.
 - Add schema-level constraints/checks for stronger type-content consistency.
 - Add rate limiting and anti-abuse controls for post submission.
-- Improve runtime request validation with schema library (e.g., strict typed DTO validation).
+- Improve runtime request validation with schema library (e.g., strict typed DTO
+  validation).
