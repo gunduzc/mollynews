@@ -8,12 +8,19 @@ export class SubmitPostService {
     private readonly postFactorySelector: PostFactorySelector
   ) {}
 
-  // UC-3 Submit Post
   async submit(input: PostInput): Promise<Post> {
     this.validateInput(input);
     const factory = this.postFactorySelector.getFactory(input.type);
     const post = factory.create(input);
-    await this.postRepository.create(post);
+    await this.postRepository.create({
+      id: post.id,
+      title: post.title,
+      type: post.type,
+      url: post.url ?? undefined,
+      text: post.text ?? undefined,
+      authorId: post.authorId,
+      createdAt: post.createdAt,
+    });
     return post;
   }
 

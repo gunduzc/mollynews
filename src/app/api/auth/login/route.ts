@@ -7,9 +7,14 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const session = await authService.login(String(body.username ?? ""), String(body.password ?? ""));
+    const session = await authService.login(
+      String(body.username ?? ""),
+      String(body.password ?? "")
+    );
 
-    cookies().set("session", session.token, {
+    const cookieStore = await cookies();
+
+    cookieStore.set("session", session.token, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",

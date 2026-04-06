@@ -5,7 +5,9 @@ import { authService } from "../../../../infrastructure/container";
 export const runtime = "nodejs";
 
 export async function GET() {
-  const sessionToken = cookies().get("session")?.value;
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("session")?.value;
+
   if (!sessionToken) {
     return NextResponse.json({ user: null }, { status: 200 });
   }
@@ -15,5 +17,8 @@ export async function GET() {
     return NextResponse.json({ user: null }, { status: 200 });
   }
 
-  return NextResponse.json({ user: { id: user.id, username: user.username } }, { status: 200 });
+  return NextResponse.json(
+    { user: { id: user.id, username: user.username } },
+    { status: 200 }
+  );
 }

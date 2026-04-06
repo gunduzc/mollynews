@@ -1,15 +1,18 @@
 import type { ReactNode } from "react";
+import "./globals.css";
+import ModeratorModeToggle from "../components/ModeratorModeToggle";
 
 export const metadata = {
   title: "SlashNews",
-  description: "UC-3 Submit Post demo"
+  description: "Community-driven social news platform"
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ fontFamily: "system-ui, sans-serif", margin: 0, padding: 24 }}>
+      <body>
         {children}
+        <ModeratorModeToggle />
       </body>
     </html>
   );

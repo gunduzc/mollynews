@@ -1,52 +1,91 @@
 "use client";
 
+import Navbar from "../../components/Navbar";
+import PageHeader from "../../components/PageHeader";
 import { useState } from "react";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  async function onSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setMessage(null);
+  async function handleRegister() {
+    setError("");
 
-    const response = await fetch("/api/auth/register", {
+    const res = await fetch("/api/auth/register", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      setMessage(data.error ?? "Registration failed");
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error ?? "Register failed");
       return;
     }
 
-    setMessage("Registered successfully. You can now log in.");
-    setPassword("");
+    window.location.href = "/login";
   }
 
   return (
-    <main style={{ maxWidth: 480, margin: "0 auto" }}>
-      <h1>Register</h1>
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          Username
-          <input value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </label>
-        <label style={{ display: "grid", gap: 6 }}>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
-        <button type="submit">Create account</button>
-      </form>
-      {message ? <p style={{ marginTop: 12 }}>{message}</p> : null}
+    <main className="page-shell">
+      <Navbar />
+
+      <section className="auth-layout">
+        <PageHeader
+          eyebrow="Join The Board"
+          title="Create a community-ready account in seconds."
+          description="Register to post links, write text submissions, vote on ideas and participate in threaded discussions."
+          primaryHref="/login"
+          primaryLabel="Already registered?"
+          secondaryHref="/"
+          secondaryLabel="See the feed"
+        />
+
+        <section className="form-card">
+          <h2>Register</h2>
+          <p className="section-copy">
+            Pick a simple username and a secure password to get started.
+          </p>
+
+          <div className="form-stack">
+            <div className="form-field">
+              <label>Username</label>
+              <input
+                className="text-input"
+                placeholder="news_builder"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+
+            <div className="form-field">
+              <label>Password</label>
+              <input
+                className="text-input"
+                type="password"
+                placeholder="Minimum 8 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            {error ? <div className="error-banner">{error}</div> : null}
+
+            <div className="submit-row">
+              <button className="pill-button" onClick={handleRegister}>
+                Create account
+              </button>
+              <a className="ghost-button" href="/login">
+                Go to login
+              </a>
+            </div>
+          </div>
+        </section>
+      </section>
     </main>
   );
 }

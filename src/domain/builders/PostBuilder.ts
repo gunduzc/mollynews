@@ -1,9 +1,5 @@
 import { Post, PostType } from "../entities/Post";
 
-// Design Pattern: Builder
-// Intent: Construct Post objects step-by-step to avoid large constructors and invalid combos.
-// Motivation: Posts have optional fields (url/text). Builder centralizes validation and assembly.
-// Improvement: Reduces required constructor parameters from 6 to 1 at call sites.
 export class PostBuilder {
   private id?: string;
   private title?: string;
@@ -68,6 +64,8 @@ export class PostBuilder {
       url: this.url,
       text: this.text,
       authorId: this.authorId,
+      score: 0,
+      status: "normal",
       createdAt: this.createdAt
     };
   }

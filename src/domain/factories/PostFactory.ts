@@ -10,10 +10,6 @@ export interface PostInput {
   authorId: string;
 }
 
-// Design Pattern: Factory Method
-// Intent: Let subclasses decide which Post variant to create without changing call sites.
-// Motivation: UC-3 supports LinkPost vs TextPost with different required fields.
-// Improvement: Eliminates branching at callers (1 factory call instead of 2 type-specific flows).
 export abstract class PostFactory {
   create(input: PostInput): Post {
     const builder = new PostBuilder()

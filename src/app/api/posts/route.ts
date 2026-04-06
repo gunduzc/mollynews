@@ -1,40 +1,55 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { authService, submitPostService, postReadRepository } from "../../../infrastructure/container";
-import { PostType } from "../../../domain/entities/Post";
+import {
+  authService,
+  postReadRepository,
+  submitPostService,
+} from "../../../infrastructure/container";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    const body = await request.json();
-    const sessionToken = cookies().get("session")?.value;
+    const posts = await postReadRepository.listVisible(20);
+    return NextResponse.json({ posts }, { status: 200 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to load posts";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("session")?.value;
 
     if (!sessionToken) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
     const user = await authService.getUserBySessionToken(sessionToken);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    const post = await submitPostService.submit({
-      title: String(body.title ?? ""),
-      type: body.type as PostType,
-      url: body.url ? String(body.url) : undefined,
-      text: body.text ? String(body.text) : undefined,
-      authorId: user.id
+    const body = await req.json();
+    const result = await submitPostService.submit({
+      ...body,
+      authorId: user.id,
     });
 
-    return NextResponse.json({ post }, { status: 201 });
+    return NextResponse.json({ success: true, post: result }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Invalid request";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const message = error instanceof Error ? error.message : "Post could not be created";
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 400 }
+    );
   }
-}
-
-export async function GET() {
-  const posts = await postReadRepository.listLatest(20);
-  return NextResponse.json({ posts });
 }

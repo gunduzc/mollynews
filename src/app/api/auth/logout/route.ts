@@ -5,12 +5,14 @@ import { authService } from "../../../../infrastructure/container";
 export const runtime = "nodejs";
 
 export async function POST() {
-  const sessionToken = cookies().get("session")?.value;
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("session")?.value;
+
   if (sessionToken) {
     await authService.logout(sessionToken);
   }
 
-  cookies().set("session", "", {
+  cookieStore.set("session", "", {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
