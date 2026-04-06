@@ -1,12 +1,8 @@
-import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import {
   authService,
-  postReadRepository,
-  postWriteRepository,
-  voteReadRepository,
-  voteWriteRepository,
+  voteService,
 } from "../../../../../infrastructure/container";
 
 export const runtime = "nodejs";
@@ -33,65 +29,18 @@ export async function POST(_: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const post = await postReadRepository.findById(postId);
-    if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
-
-    if (post.status !== "normal") {
-      return NextResponse.json(
-        { error: "This post cannot be upvoted" },
-        { status: 400 }
-      );
-    }
-
-    const existingVote = await voteReadRepository.findByUserTarget(user.id, "post", postId);
-
-    if (!existingVote) {
-      await voteWriteRepository.create({
-        id: randomUUID(),
-        userId: user.id,
-        targetType: "post",
-        targetId: postId,
-        value: 1,
-        createdAt: Date.now(),
-      });
-
-      await postWriteRepository.incrementScore(postId);
-    } else if (existingVote.value === 1) {
-      await voteWriteRepository.deleteByUserTarget(user.id, "post", postId);
-      await postWriteRepository.decrementScore(postId);
-    } else {
-      await voteWriteRepository.deleteByUserTarget(user.id, "post", postId);
-      await voteWriteRepository.create({
-        id: randomUUID(),
-        userId: user.id,
-        targetType: "post",
-        targetId: postId,
-        value: 1,
-        createdAt: Date.now(),
-      });
-
-      await postWriteRepository.incrementScore(postId);
-      await postWriteRepository.incrementScore(postId);
-    }
-
-    const updatedPost = await postReadRepository.findById(postId);
+    const result = await voteService.upvotePost(user.id, postId);
 
     return NextResponse.json(
-      {
-        message:
-          !existingVote
-            ? "Post upvoted successfully"
-            : existingVote.value === 1
-              ? "Post upvote removed"
-              : "Downvote removed and post upvoted",
-        post: updatedPost,
-      },
+      { message: result.message, post: result.target },
       { status: 200 }
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid request";
+    if (message === "Post not found") {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
@@ -112,58 +61,18 @@ export async function DELETE(_: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const post = await postReadRepository.findById(postId);
-    if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
-
-    const existingVote = await voteReadRepository.findByUserTarget(user.id, "post", postId);
-
-    if (!existingVote) {
-      await voteWriteRepository.create({
-        id: randomUUID(),
-        userId: user.id,
-        targetType: "post",
-        targetId: postId,
-        value: -1,
-        createdAt: Date.now(),
-      });
-
-      await postWriteRepository.decrementScore(postId);
-    } else if (existingVote.value === -1) {
-      await voteWriteRepository.deleteByUserTarget(user.id, "post", postId);
-      await postWriteRepository.incrementScore(postId);
-    } else {
-      await voteWriteRepository.deleteByUserTarget(user.id, "post", postId);
-      await voteWriteRepository.create({
-        id: randomUUID(),
-        userId: user.id,
-        targetType: "post",
-        targetId: postId,
-        value: -1,
-        createdAt: Date.now(),
-      });
-
-      await postWriteRepository.decrementScore(postId);
-      await postWriteRepository.decrementScore(postId);
-    }
-
-    const updatedPost = await postReadRepository.findById(postId);
+    const result = await voteService.downvotePost(user.id, postId);
 
     return NextResponse.json(
-      {
-        message:
-          !existingVote
-            ? "Post downvoted successfully"
-            : existingVote.value === -1
-              ? "Post downvote removed"
-              : "Upvote removed and post downvoted",
-        post: updatedPost,
-      },
+      { message: result.message, post: result.target },
       { status: 200 }
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid request";
+    if (message === "Post not found") {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -3,6 +3,8 @@ import { SubmitPostService } from "../application/services/SubmitPostService";
 import { FeedService } from "../application/services/FeedService";
 import { ModerationService } from "../application/services/ModerationService";
 import { CommentThreadService } from "../application/services/CommentThreadService";
+import { CommentService } from "../application/services/CommentService";
+import { VoteService } from "../application/services/VoteService";
 import { PostFactorySelector } from "../domain/factories/PostFactory";
 
 import { SqlitePostRepository } from "./repositories/SqlitePostRepository";
@@ -19,6 +21,12 @@ const voteRepository = new SqliteVoteRepository();
 
 const postFactorySelector = new PostFactorySelector();
 const commentThreadService = new CommentThreadService();
+const commentServiceInstance = new CommentService(postRepository, commentRepository);
+const voteServiceInstance = new VoteService(
+  postRepository,
+  commentRepository,
+  voteRepository
+);
 
 export const submitPostService = new SubmitPostService(
   postRepository,
@@ -36,6 +44,8 @@ export const moderationService = new ModerationService(
   commentRepository,
   voteRepository
 );
+export const commentService = commentServiceInstance;
+export const voteService = voteServiceInstance;
 
 export const postReadRepository = postRepository;
 export const postWriteRepository = postRepository;

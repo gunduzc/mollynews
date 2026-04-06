@@ -1,12 +1,12 @@
-import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import {
   authService,
+  commentService,
   commentTreeService,
   postReadRepository,
   commentReadRepository,
-  commentWriteRepository,
+  userReadRepository,
   voteReadRepository,
 } from "../../../../../infrastructure/container";
 
@@ -29,6 +29,13 @@ export async function GET(_: Request, context: RouteContext) {
 
     const comments = await commentReadRepository.findByPostId(postId);
     const thread = commentTreeService.buildThread(comments);
+    const authorEntries = await Promise.all(
+      comments.map(async (comment) => [
+        comment.authorId,
+        (await userReadRepository.findById(comment.authorId))?.username ?? "unknown",
+      ] as const)
+    );
+    const authorMap = Object.fromEntries(authorEntries);
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get("session")?.value;
     const user = sessionToken
@@ -45,6 +52,7 @@ export async function GET(_: Request, context: RouteContext) {
     function applyVotes(nodes: typeof thread): typeof thread {
       return nodes.map((node) => ({
         ...node,
+        authorUsername: authorMap[node.authorId] ?? "unknown",
         currentUserVote: voteMap[node.id] ?? 0,
         children: applyVotes(node.children),
       }));
@@ -76,47 +84,25 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const post = await postReadRepository.findById(postId);
-    if (!post) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    }
-
     const body = await request.json();
-    const content = String(body.content ?? "").trim();
+    const content = String(body.content ?? "");
     const parentCommentId = body.parentCommentId
       ? String(body.parentCommentId)
       : null;
-
-    if (!content) {
-      return NextResponse.json(
-        { error: "Comment content is required" },
-        { status: 400 }
-      );
-    }
-
-    if (parentCommentId) {
-      const parentComment = await commentReadRepository.findById(parentCommentId);
-
-      if (!parentComment || parentComment.postId !== postId) {
-        return NextResponse.json(
-          { error: "Invalid parent comment" },
-          { status: 400 }
-        );
-      }
-    }
-
-    const comment = await commentWriteRepository.create({
-      id: randomUUID(),
+    const comment = await commentService.addComment({
       postId,
       authorId: user.id,
-      parentCommentId,
       content,
-      createdAt: Date.now(),
+      parentCommentId,
     });
 
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid request";
+    if (message === "Post not found") {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

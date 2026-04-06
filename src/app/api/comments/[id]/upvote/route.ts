@@ -1,12 +1,8 @@
-import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import {
   authService,
-  commentReadRepository,
-  commentWriteRepository,
-  voteReadRepository,
-  voteWriteRepository,
+  voteService,
 } from "../../../../../infrastructure/container";
 
 export const runtime = "nodejs";
@@ -33,69 +29,18 @@ export async function POST(_: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const comment = await commentReadRepository.findById(commentId);
-    if (!comment) {
-      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
-    }
-
-    if (comment.status !== "normal") {
-      return NextResponse.json(
-        { error: "This comment cannot be upvoted" },
-        { status: 400 }
-      );
-    }
-
-    const existingVote = await voteReadRepository.findByUserTarget(
-      user.id,
-      "comment",
-      commentId
-    );
-
-    if (!existingVote) {
-      await voteWriteRepository.create({
-        id: randomUUID(),
-        userId: user.id,
-        targetType: "comment",
-        targetId: commentId,
-        value: 1,
-        createdAt: Date.now(),
-      });
-
-      await commentWriteRepository.incrementScore(commentId);
-    } else if (existingVote.value === 1) {
-      await voteWriteRepository.deleteByUserTarget(user.id, "comment", commentId);
-      await commentWriteRepository.decrementScore(commentId);
-    } else {
-      await voteWriteRepository.deleteByUserTarget(user.id, "comment", commentId);
-      await voteWriteRepository.create({
-        id: randomUUID(),
-        userId: user.id,
-        targetType: "comment",
-        targetId: commentId,
-        value: 1,
-        createdAt: Date.now(),
-      });
-
-      await commentWriteRepository.incrementScore(commentId);
-      await commentWriteRepository.incrementScore(commentId);
-    }
-
-    const updatedComment = await commentReadRepository.findById(commentId);
+    const result = await voteService.upvoteComment(user.id, commentId);
 
     return NextResponse.json(
-      {
-        message:
-          !existingVote
-            ? "Comment upvoted successfully"
-            : existingVote.value === 1
-              ? "Comment upvote removed"
-              : "Downvote removed and comment upvoted",
-        comment: updatedComment,
-      },
+      { message: result.message, comment: result.target },
       { status: 200 }
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid request";
+    if (message === "Comment not found") {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
@@ -116,62 +61,18 @@ export async function DELETE(_: Request, context: RouteContext) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const comment = await commentReadRepository.findById(commentId);
-    if (!comment) {
-      return NextResponse.json({ error: "Comment not found" }, { status: 404 });
-    }
-
-    const existingVote = await voteReadRepository.findByUserTarget(
-      user.id,
-      "comment",
-      commentId
-    );
-
-    if (!existingVote) {
-      await voteWriteRepository.create({
-        id: randomUUID(),
-        userId: user.id,
-        targetType: "comment",
-        targetId: commentId,
-        value: -1,
-        createdAt: Date.now(),
-      });
-
-      await commentWriteRepository.decrementScore(commentId);
-    } else if (existingVote.value === -1) {
-      await voteWriteRepository.deleteByUserTarget(user.id, "comment", commentId);
-      await commentWriteRepository.incrementScore(commentId);
-    } else {
-      await voteWriteRepository.deleteByUserTarget(user.id, "comment", commentId);
-      await voteWriteRepository.create({
-        id: randomUUID(),
-        userId: user.id,
-        targetType: "comment",
-        targetId: commentId,
-        value: -1,
-        createdAt: Date.now(),
-      });
-
-      await commentWriteRepository.decrementScore(commentId);
-      await commentWriteRepository.decrementScore(commentId);
-    }
-
-    const updatedComment = await commentReadRepository.findById(commentId);
+    const result = await voteService.downvoteComment(user.id, commentId);
 
     return NextResponse.json(
-      {
-        message:
-          !existingVote
-            ? "Comment downvoted successfully"
-            : existingVote.value === -1
-              ? "Comment downvote removed"
-              : "Upvote removed and comment downvoted",
-        comment: updatedComment,
-      },
+      { message: result.message, comment: result.target },
       { status: 200 }
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid request";
+    if (message === "Comment not found") {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

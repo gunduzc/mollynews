@@ -48,12 +48,55 @@ export default function Navbar() {
 
       <nav className="nav-links">
         <a className={`nav-link${pathname === "/" ? " active" : ""}`} href="/">
+          <svg className="nav-link-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle
+              cx="11"
+              cy="11"
+              r="6.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            />
+            <path
+              d="M16 16 L21 21"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
           Feed
         </a>
         <a
           className={`nav-link${pathname === "/submit" ? " active" : ""}`}
           href="/submit"
         >
+          <svg
+            className="nav-link-icon nav-link-icon-compose"
+            viewBox="0 0 64 64"
+            aria-hidden="true"
+          >
+            <rect
+              x="14"
+              y="12"
+              width="30"
+              height="34"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3.5"
+            />
+            <path
+              d="M18 45 L33 24 C39 17 47 14 55 16 C50 21 45 26 38 31 L24 42 Z"
+              fill="currentColor"
+            />
+            <path
+              d="M23 40 L43 22"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
           Submit
         </a>
       </nav>

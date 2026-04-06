@@ -8,11 +8,13 @@ import { useModeratorMode } from "../../../components/useModeratorMode";
 type Post = {
   id: string;
   title: string;
+  authorUsername: string;
   text?: string | null;
   url?: string | null;
   type: "link" | "text";
   score: number;
   status: "normal" | "hidden" | "removed";
+  createdAt: number;
   currentUserVote?: -1 | 0 | 1;
 };
 
@@ -20,6 +22,7 @@ type CommentNode = {
   id: string;
   postId: string;
   authorId: string;
+  authorUsername: string;
   parentCommentId?: string | null;
   content: string;
   score: number;
@@ -266,6 +269,42 @@ export default function PostPage() {
     setActiveReplyId((current) => (current === commentId ? null : commentId));
   }
 
+  function formatRelativeAge(createdAt: number) {
+    const diffSeconds = Math.max(1, Math.floor((Date.now() - createdAt) / 1000));
+
+    if (diffSeconds < 60) {
+      return `-${diffSeconds}sn-`;
+    }
+
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) {
+      return `-${diffMinutes}dk-`;
+    }
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) {
+      return `-${diffHours}sa-`;
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) {
+      return `-${diffDays}g-`;
+    }
+
+    const diffWeeks = Math.floor(diffDays / 7);
+    if (diffWeeks < 4) {
+      return `-${diffWeeks}hf-`;
+    }
+
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths < 12) {
+      return `-${diffMonths}ay-`;
+    }
+
+    const diffYears = Math.floor(diffDays / 365);
+    return `-${diffYears}y-`;
+  }
+
   function renderCommentNode(node: CommentNode, depth = 0) {
     const isCollapsed = collapsedComments[node.id] ?? false;
     const hasChildren = node.children.length > 0;
@@ -287,17 +326,11 @@ export default function PostPage() {
         : 0;
 
     return (
-      <div
-        key={node.id}
-        className={`comment-card${depth > 0 ? " is-reply" : ""}`}
-      >
+      <div key={node.id} className={`comment-card${depth > 0 ? " is-reply" : ""}`}>
         <div className="comment-meta">
-          <span className="meta-badge">Comment</span>
+          <span>{node.authorUsername}</span>
           <span className="meta-badge">Score {node.score}</span>
-          <span className="meta-badge">{node.status}</span>
-          {hasChildren ? (
-            <span className="meta-badge">{node.childCount} repl{node.childCount === 1 ? "y" : "ies"}</span>
-          ) : null}
+          <span className="meta-badge">{formatRelativeAge(node.createdAt)}</span>
         </div>
 
         <div className="comment-body">{node.content}</div>
@@ -420,191 +453,195 @@ export default function PostPage() {
     <main className="page-shell">
       <Navbar />
 
-      <section className="post-layout">
-        <div className="post-card">
-          <div className="post-meta">
-            <span className="meta-badge">{post.type === "link" ? "Link post" : "Text post"}</span>
-            <span className="meta-badge">Score {post.score}</span>
-            <span className="meta-badge">{post.status}</span>
-          </div>
-
-          <h1 className="post-title">{post.title}</h1>
-
-          {post.url ? (
-            <p>
-              <a className="post-link" href={post.url} target="_blank" rel="noreferrer">
-                {post.url}
-              </a>
-            </p>
-          ) : null}
-
-          <div className="post-body">
-            {post.text?.trim() || "This thread is centered around the shared link."}
-          </div>
-
-          <div className="inline-actions" style={{ marginTop: 18 }}>
-            <button
-              className={`vote-pill${post.currentUserVote === 1 ? " active-up" : ""}`}
-              onClick={() => voteOnPost("POST")}
-              aria-label="Upvote post"
-            >
-              ▲
-            </button>
-            <button
-              className={`vote-pill${post.currentUserVote === -1 ? " active-down" : ""}`}
-              onClick={() => voteOnPost("DELETE")}
-              aria-label="Downvote post"
-            >
-              ▼
-            </button>
-            <a className="ghost-button" href="/">
-              Back to feed
-            </a>
-          </div>
-
-          {isModeratorMode ? (
-            <div className="moderation-panel" style={{ marginTop: 18 }}>
-              <div className="comment-meta" style={{ marginBottom: 12 }}>
-                <span className="meta-badge">Moderator Mode</span>
-              </div>
-              <div className="moderation-row">
-                <button className="ghost-button" onClick={() => moderate("hide")}>
-                  Hide
-                </button>
-                <button className="danger-button" onClick={() => moderate("remove")}>
-                  Remove
-                </button>
-                <button className="ghost-button" onClick={() => moderate("restore")}>
-                  Restore
-                </button>
-              </div>
+      <section className="detail-layout">
+        <div className="detail-main">
+          <div className="post-card">
+            <div className="post-meta">
+              <span>{post.authorUsername}</span>
+              <span className="meta-badge">{post.type === "link" ? "Link post" : "Text post"}</span>
+              <span className="meta-badge">Score {post.score}</span>
+              <span className="meta-badge">{post.status}</span>
+              <span className="meta-badge">{formatRelativeAge(post.createdAt)}</span>
             </div>
-          ) : null}
 
-          {error ? <div className="error-banner" style={{ marginTop: 18 }}>{error}</div> : null}
-          {statusMessage ? (
-            <div className="success-banner" style={{ marginTop: 18 }}>
-              {statusMessage}
+            <h1 className="post-title">{post.title}</h1>
+
+            {post.url ? (
+              <p>
+                <a className="post-link" href={post.url} target="_blank" rel="noreferrer">
+                  {post.url}
+                </a>
+              </p>
+            ) : null}
+
+            <div className="post-body">
+              {post.text?.trim() || "This thread is centered around the shared link."}
             </div>
-          ) : null}
-        </div>
 
-        <aside className="surface-card">
-          <h3>Discussion Details</h3>
-          <p className="muted">
-            Follow the flow of the conversation, jump between branches, and keep
-            longer threads easy to scan.
-          </p>
-          <ul className="side-list">
-            <li>
-              <strong>{totalComments}</strong>
-              <div className="muted">Comments in this thread</div>
-            </li>
-            <li>
-              <strong>{thread.length}</strong>
-              <div className="muted">Top-level discussion starters</div>
-            </li>
-            <li>
-              <strong>{isModeratorMode ? "Moderator view" : "Standard view"}</strong>
-              <div className="muted">
-                {isReady && isModeratorMode
-                  ? "Hide keeps content in the database, remove deletes it permanently."
-                  : "Moderator tools stay out of the way until you need them."}
-              </div>
-            </li>
-          </ul>
-        </aside>
-      </section>
-
-      <section style={{ marginTop: 14 }} className="content-grid">
-        <div className="surface-card">
-          <h2>Comments</h2>
-          <p className="section-copy">
-            Add a top-level comment or reply directly inside an existing branch.
-          </p>
-
-          {!isCommentComposerOpen ? (
-            <div className="submit-row" style={{ marginBottom: 20 }}>
+            <div className="inline-actions" style={{ marginTop: 18 }}>
               <button
-                className="ghost-button write-comment-button"
-                onClick={() => setIsCommentComposerOpen(true)}
+                className={`vote-pill${post.currentUserVote === 1 ? " active-up" : ""}`}
+                onClick={() => voteOnPost("POST")}
+                aria-label="Upvote post"
               >
-                <svg
-                  className="write-comment-icon"
-                  viewBox="0 0 64 64"
-                  aria-hidden="true"
-                >
-                  <rect
-                    x="14"
-                    y="12"
-                    width="30"
-                    height="34"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3.5"
-                  />
-                  <path
-                    d="M18 45 L33 24 C39 17 47 14 55 16 C50 21 45 26 38 31 L24 42 Z"
-                    fill="currentColor"
-                  />
-                  <path
-                    d="M23 40 L43 22"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                Write a comment
+                ▲
               </button>
+              <button
+                className={`vote-pill${post.currentUserVote === -1 ? " active-down" : ""}`}
+                onClick={() => voteOnPost("DELETE")}
+                aria-label="Downvote post"
+              >
+                ▼
+              </button>
+              <a className="ghost-button" href="/">
+                Back to feed
+              </a>
             </div>
-          ) : (
-            <div className="form-stack" style={{ marginBottom: 20 }}>
-              <div className="form-field">
-                <label>Add a comment</label>
-                <textarea
-                  className="text-area"
-                  value={commentText}
-                  onChange={(event) => setCommentText(event.target.value)}
-                  placeholder="Write a thoughtful reply to this thread."
-                />
-              </div>
-              <div className="submit-row">
-                <button className="pill-button" onClick={addComment}>
-                  Add Comment
-                </button>
-                <button
-                  className="ghost-button"
-                  onClick={() => {
-                    setIsCommentComposerOpen(false);
-                    setCommentText("");
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
 
-          {thread.length === 0 ? (
-            <div className="empty-card">No comments yet. Be the first to start the thread.</div>
-          ) : (
-            <div className="comment-stack">{thread.map((node) => renderCommentNode(node))}</div>
-          )}
+            {isModeratorMode ? (
+              <div className="moderation-panel" style={{ marginTop: 18 }}>
+                <div className="comment-meta" style={{ marginBottom: 12 }}>
+                  <span className="meta-badge">Moderator Mode</span>
+                </div>
+                <div className="moderation-row">
+                  <button className="ghost-button" onClick={() => moderate("hide")}>
+                    Hide
+                  </button>
+                  <button className="danger-button" onClick={() => moderate("remove")}>
+                    Remove
+                  </button>
+                  <button className="ghost-button" onClick={() => moderate("restore")}>
+                    Restore
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {error ? <div className="error-banner" style={{ marginTop: 18 }}>{error}</div> : null}
+            {statusMessage ? (
+              <div className="success-banner" style={{ marginTop: 18 }}>
+                {statusMessage}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="surface-card" style={{ marginTop: 16 }}>
+            <h2>Comments</h2>
+            <p className="section-copy">
+              Add a top-level comment or reply directly inside an existing branch.
+            </p>
+
+            {!isCommentComposerOpen ? (
+              <div className="submit-row" style={{ marginBottom: 20 }}>
+                <button
+                  className="ghost-button write-comment-button"
+                  onClick={() => setIsCommentComposerOpen(true)}
+                >
+                  <svg
+                    className="write-comment-icon"
+                    viewBox="0 0 64 64"
+                    aria-hidden="true"
+                  >
+                    <rect
+                      x="14"
+                      y="12"
+                      width="30"
+                      height="34"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3.5"
+                    />
+                    <path
+                      d="M18 45 L33 24 C39 17 47 14 55 16 C50 21 45 26 38 31 L24 42 Z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M23 40 L43 22"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Write a comment
+                </button>
+              </div>
+            ) : (
+              <div className="form-stack" style={{ marginBottom: 20 }}>
+                <div className="form-field">
+                  <label>Add a comment</label>
+                  <textarea
+                    className="text-area"
+                    value={commentText}
+                    onChange={(event) => setCommentText(event.target.value)}
+                    placeholder="Write a thoughtful reply to this thread."
+                  />
+                </div>
+                <div className="submit-row">
+                  <button className="pill-button" onClick={addComment}>
+                    Add Comment
+                  </button>
+                  <button
+                    className="ghost-button"
+                    onClick={() => {
+                      setIsCommentComposerOpen(false);
+                      setCommentText("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {thread.length === 0 ? (
+              <div className="empty-card">No comments yet. Be the first to start the thread.</div>
+            ) : (
+              <div className="comment-stack">{thread.map((node) => renderCommentNode(node))}</div>
+            )}
+          </div>
         </div>
 
-        <aside className="side-card">
-          <h3>Thread Tips</h3>
-          <ul className="side-list">
-            <li>
-              <strong>Reply in place</strong>
-              <div className="muted">Each comment can open its own inline reply composer.</div>
-            </li>
-            <li>
-              <strong>Collapse deep branches</strong>
-              <div className="muted">Long subthreads can be folded without hiding the whole page.</div>
-            </li>
-          </ul>
+        <aside className="detail-sidebar">
+          <div className="surface-card">
+            <h3>Discussion Details</h3>
+            <p className="muted">
+              Follow the flow of the conversation, jump between branches, and keep
+              longer threads easy to scan.
+            </p>
+            <ul className="side-list">
+              <li>
+                <strong>{totalComments}</strong>
+                <div className="muted">Comments in this thread</div>
+              </li>
+              <li>
+                <strong>{thread.length}</strong>
+                <div className="muted">Top-level discussion starters</div>
+              </li>
+              <li>
+                <strong>{isModeratorMode ? "Moderator view" : "Standard view"}</strong>
+                <div className="muted">
+                  {isReady && isModeratorMode
+                    ? "Hide keeps content in the database, remove deletes it permanently."
+                    : "Moderator tools stay out of the way until you need them."}
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div className="side-card">
+            <h3>Thread Tips</h3>
+            <ul className="side-list">
+              <li>
+                <strong>Reply in place</strong>
+                <div className="muted">Each comment can open its own inline reply composer.</div>
+              </li>
+              <li>
+                <strong>Collapse deep branches</strong>
+                <div className="muted">Long subthreads can be folded without hiding the whole page.</div>
+              </li>
+            </ul>
+          </div>
         </aside>
       </section>
     </main>

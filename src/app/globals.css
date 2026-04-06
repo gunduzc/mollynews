@@ -143,7 +143,8 @@ button {
 }
 
 .nav-link {
-  color: var(--muted);
+  color: #44516a;
+  font-weight: 500;
   background: rgba(255, 255, 255, 0.56);
 }
 
@@ -151,6 +152,17 @@ button {
   color: var(--text);
   border-color: rgba(255, 90, 54, 0.24);
   background: var(--accent-soft);
+}
+
+.nav-link-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.nav-link-icon-compose {
+  width: 17px;
+  height: 17px;
 }
 
 .user-chip {
@@ -220,6 +232,44 @@ button {
 .content-grid,
 .post-layout {
   grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.home-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.home-main {
+  min-width: 0;
+}
+
+.home-sidebar {
+  position: sticky;
+  top: 108px;
+  display: grid;
+  gap: 24px;
+  align-self: start;
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.detail-main {
+  min-width: 0;
+}
+
+.detail-sidebar {
+  position: sticky;
+  top: 108px;
+  display: grid;
+  gap: 24px;
+  align-self: start;
 }
 
 .auth-layout,
@@ -459,7 +509,7 @@ button {
 .feed-summary,
 .post-body,
 .comment-body {
-  color: var(--muted);
+  color: #2f3747;
   line-height: 1.65;
 }
 
@@ -696,6 +746,8 @@ button {
   .hero-grid,
   .content-grid,
   .post-layout,
+  .home-layout,
+  .detail-layout,
   .auth-layout,
   .submit-layout {
     grid-template-columns: 1fr;
@@ -703,7 +755,9 @@ button {
 
   .hero-grid > .side-card,
   .content-grid > .surface-card,
-  .content-grid > .side-card {
+  .content-grid > .side-card,
+  .home-sidebar,
+  .detail-sidebar {
     position: static;
     top: auto;
   }

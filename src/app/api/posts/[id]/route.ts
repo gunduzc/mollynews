@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import {
   authService,
   postReadRepository,
+  userReadRepository,
   voteReadRepository,
 } from "../../../../infrastructure/container";
 
@@ -33,9 +34,16 @@ export async function GET(_: Request, context: RouteContext) {
     const vote = user
       ? await voteReadRepository.findByUserTarget(user.id, "post", id)
       : null;
+    const author = await userReadRepository.findById(post.authorId);
 
     return NextResponse.json(
-      { post: { ...post, currentUserVote: vote?.value ?? 0 } },
+      {
+        post: {
+          ...post,
+          authorUsername: author?.username ?? "unknown",
+          currentUserVote: vote?.value ?? 0,
+        },
+      },
       { status: 200 }
     );
   } catch (error) {

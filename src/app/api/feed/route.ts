@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-import { authService, feedService, voteReadRepository } from "../../../infrastructure/container";
+import {
+  authService,
+  feedService,
+  userReadRepository,
+  voteReadRepository,
+} from "../../../infrastructure/container";
 import { FeedStrategySelector } from "../../../domain/strategies/FeedStrategySelector";
 
 export async function GET(req: NextRequest) {
@@ -12,6 +17,13 @@ export async function GET(req: NextRequest) {
     const strategy = FeedStrategySelector.select(mode);
 
     const posts = await feedService.getFeed(strategy);
+    const authorEntries = await Promise.all(
+      posts.map(async (post) => [
+        post.authorId,
+        (await userReadRepository.findById(post.authorId))?.username ?? "unknown",
+      ] as const)
+    );
+    const authorMap = Object.fromEntries(authorEntries);
 
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get("session")?.value;
@@ -29,6 +41,7 @@ export async function GET(req: NextRequest) {
 
     const postsWithVotes = posts.map((post) => ({
       ...post,
+      authorUsername: authorMap[post.authorId] ?? "unknown",
       currentUserVote: voteMap[post.id] ?? 0,
     }));
 
